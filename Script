@@ -1,0 +1,71 @@
+% Given points
+x  = [0 1 2 3];
+y  = [4 7 14 31];
+
+% Number of points
+n = numel(x);
+
+%% 1. Build P3(x) using Lagrange base polynomials
+
+% Coefficients of P3(x) (degree 3 => 4 coefficients)
+P3 = zeros(1, n);    % [a3 a2 a1 a0] for a3*x^3 + ... + a0
+
+for i = 1:n
+    % Nodes except i
+    idx     = setdiff(1:n, i);
+    x_others = x(idx);
+
+    % Numerator polynomial of L_i(x):
+    % product_{j!=i} (x - x_j)  → coefficients via poly()
+    Li_num = poly(x_others);
+
+    % Denominator (scalar)
+    Li_den = prod(x(i) - x_others);
+
+    % Add contribution y_i * L_i(x)
+    P3 = P3 + y(i) / Li_den * Li_num;
+end
+
+disp('P3(x) coefficients (from highest degree to constant):');
+disp(P3);   % should be [1  -1   3   4] → x^3 - x^2 + 3x + 4
+
+%% 2. Build P4(x) by adding the extra point (4,3)
+
+x_new = 4;
+y_new = 3;
+
+% phi(x) = (x-0)(x-1)(x-2)(x-3) – zero at old nodes
+phi = poly(0:3);   % degree-4 polynomial coefficients
+
+% Find a such that P4(4) = 3
+P3_at_4  = polyval(P3, x_new);
+phi_at_4 = polyval(phi, x_new);
+a = (y_new - P3_at_4) / phi_at_4;   % should be -61/24
+
+% Coefficients of P4(x)
+P3=[0 P3];
+P4 = P3 + a * phi;
+
+disp('P4(x) coefficients (from highest degree to constant):');
+disp(P4);
+
+%% 3. Plot P3 and P4 with data points
+
+xx = linspace(0, 4, 400);
+yy3 = polyval(P3, xx);
+yy4 = polyval(P4, xx);
+
+figure; hold on; grid on;
+plot(xx, yy3, 'LineWidth', 1.5);          % cubic
+plot(xx, yy4, '--', 'LineWidth', 1.5);    % quartic
+scatter([x x_new], [y y_new], 60, 'filled'); % all data points
+
+legend('P_3(x) (through first 4 points)', ...
+       'P_4(x) (through 5 points)', ...
+       'Data points', ...
+       'Location','best');
+
+xlabel('x');
+ylabel('p(x)');
+title('Lagrange Interpolation: P_3 and P_4');
+hold off;
